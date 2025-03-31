@@ -18,26 +18,38 @@ void* serializar_paquete(t_paquete* paquete, int bytes)
 
 int crear_conexion(char *ip, char* puerto)
 {
-	struct addrinfo hints;
-	struct addrinfo *server_info;
+    struct addrinfo hints;
+    struct addrinfo *server_info;
+    int socket_cliente = 0;
+    int errno = 0;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
+    getaddrinfo(ip, puerto, &hints, &server_info);
 
-	getaddrinfo(ip, puerto, &hints, &server_info);
+    // Ahora vamos a crear el socket.
+    socket_cliente = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
+    if (socket_cliente == -1) {
+        perror("Error al crear el socket");
+        abort(); 
+    }
+    // Ahora que tenemos el socket, vamos a conectarlo
+    errno = connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
+    if (errno == -1) {
+        perror("Error al conectar el socket");
+        close(socket_cliente);
+        abort();
+    }
+    printf("Conectado al servidor %s:%s\n", ip, puerto);
 
-	// Ahora vamos a crear el socket.
-	int socket_cliente = 0;
+    freeaddrinfo(server_info);
 
-	// Ahora que tenemos el socket, vamos a conectarlo
-
-
-	freeaddrinfo(server_info);
-
-	return socket_cliente;
+    return socket_cliente;
 }
+
+
 
 void enviar_mensaje(char* mensaje, int socket_cliente)
 {
